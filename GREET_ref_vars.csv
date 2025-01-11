@@ -1,0 +1,87 @@
+﻿name,sheet,cell,type,description
+Ammonia_N_Content,Parameters,!$B$34,float,N content factor for ammonia
+AmmoniumNitrate_N_Content,Parameters,!$B$36,float,N content factor for ammonium nitrate
+AmmoniumSulfate_N_Content,Parameters,!$B$37,float,N content factor for ammonium sulfate
+CaCO3_CO2_Content,Parameters,!$B$58,float,Limestone CO2 content factor
+CaCO3_PercentAcidification,Parameters,!$B$59,float,Limestone acidification factor (%)
+CO2_C_to_CO2,Parameters,!$B$45,float,Carbon factor of CO2
+ConventionalAmmonia_CI,Intensities of Inputs,!$G$14,float,CI factor for conventional ammonia (final)
+ConventionalAmmonia_CI_Intermediate,Intensities of Inputs,!$G$15,float,CI factor for conventional ammonia (intermediate)
+ConventionalAmmoniumNitrate_CI,Intensities of Inputs,!$G$37,float,CI factor for conventional ammonium nitrate
+ConventionalAmmoniumSulfate_CI,Intensities of Inputs,!$G$42,float,CI factor for conventional ammonium sulfate
+ConventionalDAP_CI,Intensities of Inputs,!$G$66,float,CI factor for conventional DAP
+ConventionalPotash_CI,Intensities of Inputs,!$G$73,float,CI factor for conventional potash
+ConventionalLimestone_CI,Intensities of Inputs,!$G$83,float,CI factor for conventional limestone
+ConventionalMAP_CI,Intensities of Inputs,!$G$58,float,CI factor for conventional MAP
+ConventionalNitridAcid_CI,Intensities of Inputs,!$G$29,float,CI factor for conventional nitrid acid
+ConventionalUAN_CI,Intensities of Inputs,!$G$50,float,CI factor for conventional UAN
+ConventionalUrea_CI,Intensities of Inputs,!$G$23,float,CI factor for conventional urea
+Corn_Biomass_N2O_Factor,Parameters,!$B$31,float,Biomass N2O factor for corn
+Corn_Ninbiomass_ResidueFactor,Parameters,!$B$30,float,Ninbiomass residue factor for corn
+coverCrop_N2O_Emissions,Parameters,!$B$122,float,Cover crop N2O emission factor
+crop_Ammonia_gN_Bu,Inputs_DomesticCrops,!$M$22,float,Crop ammonia amount in g Nitrogen per bushel
+crop_AmmoniumNitrate_gN_Bu,Inputs_DomesticCrops,!$M$24,float,Crop ammonium nitrate in g Nitrogen per bushel
+crop_AmmoniumSulfate_gN_Bu,Inputs_DomesticCrops,!$M$25,float,Crop ammonium sulfate in g Nitrogen per bushel
+crop_DAP_gN_Bu,Inputs_DomesticCrops,!$M$28,float,Crop ammonia in g Nitrogen per bushel
+crop_MAP_gN_Bu,Inputs_DomesticCrops,!$M$27,float,Crop ammonia in g Nitrogen per bushel
+crop_Total_N_gN_Bu,Inputs_DomesticCrops,!$M$29,float,Crop ammonia in g Nitrogen per bushel
+crop_UAN_gN_Bu,Inputs_DomesticCrops,!$M$26,float,Crop ammonia in g Nitrogen per bushel
+crop_Urea_gN_Bu,Inputs_DomesticCrops,!$M$23,float,Crop urea amount in g Nitrogen per bushel
+DAP_N_Content,Parameters,!$B$40,float,N content factor for DAP
+DAP_P2O5_Content,Parameters,!$B$50,float,P2O5 content factor for DAP
+DAP_share_as_Nfert,Parameters,!$B$42,float,DAP share of N as N-fertilizer
+Diesel_CI,Intensities of Inputs,!$D$88,float,CI factor for diesel
+Electricity_CI,Intensities of Inputs,!$D$104,float,CI factor for electricity
+Gasoline_CI,Intensities of Inputs,!$D$92,float,CI factor for gasoline
+GreenAmmonia_CI,Intensities of Inputs,!$Q$14,float,CI factor for green ammonia (final)
+GreenAmmonia_CI_Intermediate,Intensities of Inputs,!$Q$15,float,CI factor for green ammonia (intermediate)
+GreenAmmoniumNitrate_CI,Intensities of Inputs,!$Q$37,float,CI factor for green ammonium nitrate
+GreenAmmoniumSulfate_CI,Intensities of Inputs,!$Q$42,float,CI factor for green ammonium sulfate
+GreenDAP_CI,Intensities of Inputs,!$Q$66,float,CI factor for green DAP
+GreenMAP_CI,Intensities of Inputs,!$Q$58,float,CI factor for green MAP
+GreenNitridAcid_CI,Intensities of Inputs,!$Q$29,float,CI factor for green nitrid acid
+GreenUAN_CI,Intensities of Inputs,!$Q$50,float,CI factor for green UAN
+GreenUrea_CI,Intensities of Inputs,!$Q$23,float,CI factor for green urea
+Herbicide_CI,Intensities of Inputs,!$D$107,float,CI factor for herbicide
+Insecticide_CI,Intensities of Inputs,!$D$110,float,CI factor for insecticide
+LPG_CI,Intensities of Inputs,!$D$100,float,CI factor for LPG
+Manure_N2O_factor,Parameters,!$B$135,float,N2O factor for manure
+MAP_N_Content,Parameters,!$B$39,float,N content factor for MAP
+MAP_P2O5_Content,Parameters,!$B$49,float,P2O5 content factor for MAP
+MAP_share_as_Nfert,Parameters,!$B$41,float,MAP share of N as N-fertilizer
+N2O_Factor_US_Corn,Parameters,!$C$109,float,N2O emission factor for corn
+N2O_Factor_US_Corn_Direct,Parameters,!$C$107,float,N2O emission factor for corn (direct)
+N2O_Factor_US_Corn_Indirect,Parameters,!$C$108,float,N2O emission factor for corn (indirect)
+N2O_Factor_US_Rice,Parameters,!$C$113,float,N2O emission factor for corn
+N2O_Factor_US_Rye,Parameters,!$B$124,float,N2O emission factor for rye (cover crops)
+N2O_Factor_US_Sorghum,Parameters,!$B$70,float,N2O emission factor for corn
+N2O_Factor_US_Soybean,Parameters,!$B$65,float,N2O emission factor for corn
+N2O_GWP,Parameters,!$B140,float,Global warming potential of N2O
+N2O_N_To_N2O,Parameters,!$B$44,float,N2O nitrogen ratio
+NaturalGas_CI,Intensities of Inputs,!$D$96,float,CI factor for natural gas
+ProductionEmissions_CornHerbicide_GHG,Intermediate,!$N$59,float,Production emission factor for herbicide (corn)
+Rice_Biomass_N2O_Factor,Parameters,!$B$85,float,Biomass N2O factor for rice
+Rice_Ninbiomass_ResidueFactor,Parameters,!$B$84,float,Ninbiomass residue factor for rice
+Sorghum_Biomass_N2O_Factor,Parameters,!$B$69,float,Biomass N2O factor for sorghum
+Sorghum_Ninbiomass_ResidueFactor,Parameters,!$B$68,float,Ninbiomass residue factor for sorghum
+Soybean_Biomass_N2O_Factor,Parameters,!$B$64,float,Biomass N2O factor for soybean
+Soybean_Nfixation_N2O_factor,Parameters,!$B$63,float,Nitrogen fixation N2O factor for soybean
+Soybean_Ninbiomass_ResidueFactor,Parameters,!$B$62,float,Ninbiomass residue factor for soybean
+Rye_Ninbiomass_ResidueFactor,Parameters,!$B$123,float,Ninbiomass residue factor for rye frarming
+Synthetic_N_Emission_Factor,Parameters,!$B$27,float,Emission factor for synthetic nitrogen
+ton2g,Parameters,!$B$23,float,Convert tons to grams
+Diesel_BTU2gal,Parameters,!$B$3,float,Convert diesel gal to BTU
+Gasoline_BTU2gal,Parameters,!$B$4,float,Convert gasoline gal to BTU
+Ethanol_BTU2gal,Parameters,!$B$5,float,Convert ethanol gal to BTU
+Natural gas_BTU2ft3,Parameters,!$B$6,float,Convert natural gas ft3 to BTU
+LPG_BTU2gal,Parameters,!$B$7,float,Convert LPG gal to BTU
+Electricity_BTU2kWh,Parameters,!$B$8,float,Convert kWh to BTU
+Biodiesel_BTU2gal,Parameters,!$B$9,float,Convert biodiesel gal to BTU
+UAN_N_Content,Parameters,!$B$38,float,N content factor for UAN
+Urea_N,Parameters,!$B$35,float,Urea nitrogen content factor
+Urea_N_Content,Parameters,!$B$35,float,N content factor for urea
+Urea_N_to_CO2,Parameters,!$B$46,float,Urea nitrogen to CO2 ratio
+UreaProductionUsage_In_UAN,Intermediate,!$B$26,float,Urea production usage in UAN factor
+g_to_lb,Parameters,!$B$12,float,Grams per pound
+kg2g,Parameters,!$B$19,float,Grams per kilogram
+acre2hectare,Parameters,!$B$18,float,Grams per kilogram
