@@ -1,4 +1,4 @@
-# ******** ci_calculator.py draft 2 ***********
+# ******** cis_calculator.py draft 3 ***********
 # taken from 'CI_Calculator_2.ipynb' steps 2 thru 10
 # note: the original syntax uses json to import a json file with input data
 # This version is set up as a function that can be imported by other scripts

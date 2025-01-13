@@ -10,6 +10,9 @@ COPY . /app
 # Install dependencies - see requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Configure container to run in unbuffered mode for cloud deployment
+ENV PYTHONUNBUFFERED True
+
 # Make port 8080 available to the world outside this container
 EXPOSE 8080
 

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+import uvicorn
 from contextlib import asynccontextmanager
 import logging
 import os
@@ -6,9 +7,9 @@ import os
 from typing import Dict, Any
 from class_RefDataLoader import RefDataLoader
 from class_soc_lookup import SOCLookup # for step 6 of calculator
-from ci_calculator_d1 import calculator_function  # Import the calculator function
+from cis_calculator import calculator_function  # Import the calculator function
 
-app = FastAPI()
+# app = FastAPI()
 
 # Logger setup
 logging.basicConfig(level=logging.INFO)
