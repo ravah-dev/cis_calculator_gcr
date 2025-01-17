@@ -1,19 +1,31 @@
+# main.py - Entry point for the application
+
+import sys
+print("Starting application...", file=sys.stderr)  # This will go to container logs
+
+import os
+import logging
+
+# Logger setup
+print("Setting up logging...", file=sys.stderr)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    stream=sys.stderr  # Explicitly log to stderr
+)
+logger = logging.getLogger(__name__)
+
+# Add this right after logger initialization
+logger.info("Logger initialized")
+
 from fastapi import FastAPI, HTTPException
 import uvicorn
 from contextlib import asynccontextmanager
-import logging
-import os
 # from pydantic import BaseModel
 from typing import Dict, Any
 from class_RefDataLoader import RefDataLoader
 from class_soc_lookup import SOCLookup # for step 6 of calculator
 from cis_calculator import calculator_function  # Import the calculator function
-
-# app = FastAPI()
-
-# Logger setup
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Initialize the lookup tools (one each for corn and soybean)
 soc = SOCLookup("corn_soc.csv", "soybean_soc.csv")
@@ -77,6 +89,9 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app with the lifespan context manager
 app = FastAPI(lifespan=lifespan)
+logger.info("Starting FastAPI application...")
+logger.info(f"Working directory: {os.getcwd()}")
+logger.info(f"Directory contents: {os.listdir('.')}")
 
 @app.get("/")
 def read_root():
@@ -94,6 +109,10 @@ async def calculate(data: Dict[str, Any]):
         dict: Calculation results.
     """
     try:
+        # set the port number from the environment variable, defaulting to 8080 if not set
+        port = os.getenv("PORT", "8080")
+        logger.info(f"FastAPI starting up on port {port}")
+        
         # *** Log the received input - debugging purposes
         # logger.info(f"Received input: {data}")
 

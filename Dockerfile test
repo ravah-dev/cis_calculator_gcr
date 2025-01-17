@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install fastapi uvicorn gunicorn
+
+COPY minimal.py .
+
+ENV PORT=8080
+ENV PYTHONUNBUFFERED=1
+
+# Use gunicorn with uvicorn workers
+CMD exec gunicorn test_main:app -w 1 -k uvicorn.workers.UvicornWorker --bind :$PORT

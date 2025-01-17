@@ -176,7 +176,9 @@ gcloud run deploy cis-calculator-test \
   --image gcr.io/cis-calculator-test/cis-calculator \
   --platform managed \
   --region us-central1 \
-  --allow-unauthenticated
+  --timeout 300 \
+  --memory 1Gi \
+  --no-allow-unauthenticated
 ```
 ---
 ## Python's Unbufferred Mode 
