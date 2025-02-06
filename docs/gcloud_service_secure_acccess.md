@@ -1,4 +1,4 @@
-# Setting up secure access to your gcloud API  
+# gcloud service secure access 
 There are several approaches we can use depending on your requirements:
 
 ## 1. Service Accounts (Most Secure)
@@ -42,12 +42,12 @@ gcloud alpha services identity-platform oauth-idp-configs create \
 ## 3. Public Access with API Keys
 If you want to make the service public but control access:
 
-First, make the service public:
+### First, make the service public:
 ```bash
 gcloud run services set-iam-policy cis-calculator-test \
     --region=us-central1 \
     policy.yaml
-```
+```  
 
 Where policy.yaml contains:
 ```yaml
@@ -55,9 +55,15 @@ bindings:
 - members:
   - allUsers
   role: roles/run.invoker
-```
+```  
+Alternatively, you can use the google cloud service console web gui:  
+In console.cloud.google.com ...   
+- Navigate to Cloud Run Services
+- Select the service from the list
+- On the ‘Security’ tab insure Authentication is set to ‘Allow unauthenticated invocations’
+    - This requires correct permissions. If it fails, you may still need to run the google cloud setup wizard that the account owner/administrator sees when first opening the account.
 
-Then you can implement API key validation in your FastAPI application:
+### Then you can implement API key validation in your FastAPI application:
 
 ```python
 from fastapi import Security, HTTPException
@@ -81,15 +87,17 @@ def read_root():
     return {"Hello": "This is the FastAPI World"}
 ```
 
-Each has different trade-offs:
+## Each approach has different trade-offs:
 - Service Accounts: Most secure, best for service-to-service communication
 - OAuth2: Best for web applications and user-specific authentication
-- API Keys: Simplest but less secure, good for basic access control
+- API Keys: Simplest but less secure, good for basic access control  
 
-### Setting up API Keys access (Details)
+## Notes
+### Setting up API Keys access (Details)  
 #### 1. Make the service public using the instructions above  
-In case of ERROR: (gcloud.run.services.set-iam-policy) FAILED_PRECONDITION: One or more users named in the policy do not belong to a permitted customer,  perhaps due to an organization policy:
-Let's try these steps:
+
+**In case of ERROR:** (gcloud.run.services.set-iam-policy) FAILED_PRECONDITION: One or more users named in the policy do not belong to a permitted customer,  perhaps due to an organization policy:
+Let's try these steps:  
 
 1. First, verify your current permissions:  
     ```bash
@@ -161,24 +169,6 @@ Let's try these steps:
     version: 1
     ```
 
-3. Instead of making the service completely public, let's try a more controlled approach by creating a specific binding for the service:
-    ```bash
-    gcloud run services add-iam-policy-binding cis-calculator-test \
-        --member="serviceAccount:690649350627-compute@developer.gserviceaccount.com" \
-        --role="roles/run.invoker" \
-        --region=us-central1
-    ```  
-      
-    **output**
-    ```
-    Updated IAM policy for service [cis-calculator-test].
-    bindings:
-    - members:
-        - serviceAccount:690649350627-compute@developer.gserviceaccount.com
-        role: roles/run.invoker
-    etag: BwYtab-c3-k=
-    version: 1
-    ```  
    
 #### 2. Now let's modify your FastAPI application to implement API key validation.
 

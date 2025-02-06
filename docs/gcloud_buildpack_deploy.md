@@ -166,12 +166,11 @@ Where "690649350627" would be replaced with your actual project number.
 ---  
 
 ### Then deploy:  
-
   
 **Let's try the Buildpacks deployment:**  
-    *Note: If there is a Dockerfile file in the directory, it will be used to build the image. ...So if you want gcloud to use Buildpacks to create the image, move or rename the dockerfile.*
+*Note: If there is a Dockerfile file in the directory, it will be used to build the image. ...So if you want gcloud to use Buildpacks to create the image, move or rename the dockerfile.*  
 
-- GCR requires you to deploy with authentication, and then access the service using your Google Cloud credentials
+**Note:** These instructions deploy the app with authentication required, and then access the service using your Google Cloud credentials. **The preferred deployment for API services should be to set up the service to 'Allow unauthenticated invocations' and then use API-key and validation in the API logic to control access.** Please refer to the *'gcloud_service_secure-access.md'* & *'gcloud_api_key_setup.md'* docs for more information.
 
 1. **Deploy with authentication:**  
 
