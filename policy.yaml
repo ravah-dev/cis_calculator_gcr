@@ -1,0 +1,6 @@
+name: organizations/372867527428/policies/run.allowedIngress
+spec:
+  rules:
+  - allow:
+      values:
+      - "all"

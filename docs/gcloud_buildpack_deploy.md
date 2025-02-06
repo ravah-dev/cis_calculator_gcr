@@ -167,11 +167,11 @@ Where "690649350627" would be replaced with your actual project number.
 
 ### Then deploy:  
 
-**Note: If there is a Dockerfile file in the directory, it will be used to build the image. If not, gcloud will use Buildpacks to create the image**
   
-Let's try the Buildpacks deployment:  
+**Let's try the Buildpacks deployment:**  
+    *Note: If there is a Dockerfile file in the directory, it will be used to build the image. ...So if you want gcloud to use Buildpacks to create the image, move or rename the dockerfile.*
 
-- We'll try deploying with authentication required, and then we can access it using your Google Cloud credentials:
+- GCR requires you to deploy with authentication, and then access the service using your Google Cloud credentials
 
 1. **Deploy with authentication:**  
 
@@ -188,8 +188,10 @@ gcloud run deploy cis-calculator-test \
 ```bash
 curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
     https://cis-calculator-test-690649350627.us-central1.run.app
-```
-*Here is a curl command to call the calculate function:*
+```  
+
+curl command to call the calculate function:  
+*.. assumes file 'test_farm_input.json' in current dir*
 ```bash
 curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 -X POST -H "Content-Type: application/json" -d @test_farm_input.json \
