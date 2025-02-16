@@ -2,20 +2,16 @@
 # taken from 'CI_Calculator_2.ipynb' steps 2 thru 10
 # note: the original syntax uses json to import a json file with input data
 # This version is set up as a function that can be imported by other scripts
-# The function 'calculate_ci' takes two arguments:
+# The function 'calculator_function' takes 4 arguments:
 # - data: a dictionary containing the input data
 # - global_variables: a dictionary containing global variables
+# - logger: a logger object for logging information
+# - soc: a SOCLookup object for Step 6 of the calculator
 
-# ----- this file import section is deprecated and replaced by input arguments -----
-# import json
-# # Load the JSON file
-# file_path = 'agCommander-US-Carbon_Oct-10.json'
-# with open(file_path, 'r') as file:
-#     data = json.load(file)
 
 # ----- imports for Step 3 --------------------
-from class_import_greet_defaults import GREETDefaults
 import pandas as pd
+from class_import_greet_defaults import GREETDefaults
 
 # ----- imports for Step 4  --------------------
 from class_state_to_abbr import StateNameToAbbr
@@ -39,51 +35,67 @@ def calculator_function(data, global_variables, logger, soc):
     Returns:
         dict: Calculation results.
     """
+    # push setup objects to the global scope
     global globals_initialized, state_name_to_code, fips_lookup, greet
 
     # ================== Section 2 ========================
-    # Initialize GREET Reference globals only once
+    # Push GREET Reference vars in global_variables to global scope
     if not globals_initialized:
         for var_name, value in global_variables.items():
             globals()[var_name] = value
         globals_initialized = True
         
+        # -- need to fix this issue:
         # FIX Herbicide_CI value which is reading incorrectly from the Excel file
         # The value in the Excel file is 29.52011704, but somehow it's reading 25.29087007
         # -- SEE "'Intensities of Inputs'!D107" -- 29.52 
         # Set the correct value
         globals()["Herbicide_CI"] = 29.52011704
-        logger.info(f"Herbicide_CI changed to: {Herbicide_CI}")
+        logger.info(f"Herbicide_CI fixed to: 29.52011704")
           
-        # Initialize the StateConverter class
+        # Initialize the StateConverter class function
         state_name_to_code = StateNameToAbbr()
         
-        # Initialize the FIPSLookup class
+        # Initialize the FIPSLookup class function
         fips_lookup = FIPSLookup()
         fips_lookup.load_data()
 
-        # Initialize the GREET defaults manager
+        # Initialize the manager service for GREET defaults
         logger.info("Initializing GREET Defaults Manager...")
         greet = GREETDefaults('GREET_Defaults.csv')
 
-    # calculation logic using global variables
+    
+    # ================== SECTION 3 Read Input Data ==================
     try:
-        # ================== Section 3 Read Input Data ==================
         # - decompose the dictionary passed in as 'data
-        #  & extract all feature properties to variables
+        #   & extract all feature properties to variables
         
-        length_of_features = len(data['GeoJSON']['features']) # used for reporting later
-        # logger.info(f"calc line 68 length_of_features: {length_of_features}") # debugging purpose
+        # --- used for debug & reporting later ---
+        # length_of_features = len(data['GeoJSON']['features']) 
+        # logger.info(f"calc line 68 length_of_features: {length_of_features}")
         
-        # Extract the first 1st level properties as file-level properties
+        # Load root-level properties from 'data' as 'file_level_attributes'
         # - assumes geoJSON is always the last property
         elements_in_data = len(data)
         file_level_attributes = {key: data[key] for key in list(data.keys())[:(elements_in_data-1)]}
-
-        # Extract the 'data_provider' property from file-level attributes
+        """ 
+            This is a dictionary comprehension that creates a new dictionary called file_level_attributes. 
+            - breakdown step by step:
+                data.keys() - Gets all keys from the data dictionary
+                list(data.keys()) - Converts the keys into a list
+                [:(elements_in_data-1)] - This is list slicing 
+                - that takes all elements from the start up to elements_in_data-1
+            
+            The comprehension {key: data[key] for key in ...} creates a new dictionary where:
+            - Each key from the sliced list becomes a key in the new dictionary
+            - The corresponding value is taken from the original data dictionary
+        """
+        
+        # Extract the 'data_provider' property from 'file-level attributes'
+        # - if not present, set to 'agCommander'
         data_Provider = file_level_attributes.get('Data Provider', 'agCommander')
 
-        # Extract the 'Generate Certificates' property from file-level attributes
+        # Extract the 'Generate Certificates' property from 'file-level attributes'
         # - initialize 'generate_certs' boolean
         generate_certificates = file_level_attributes.get('Generate Certificates', 'No')
         if generate_certificates.lower() in ('yes', 'true'): 
@@ -91,17 +103,17 @@ def calculator_function(data, global_variables, logger, soc):
         if generate_certificates.lower() in ('no', 'false'): 
             generate_certs = False
 
-        # extract the 'Certificate Type' property from file-level attributes
+        # extract the 'certificate_type' property from 'file-level attributes'
         certificate_type = file_level_attributes.get('Certificate Type', 'TEST')
 
-        # extract the UOM properties
+        # extract 'uom_properties' from 'file-level attributes'
         uom_properties = file_level_attributes.get('UOM', 'N/A')
         
-        # Extracting the value for "Reduction In Fertilizer"
+        # extract 'fertilizer_reduction_units' from 'uom_properties'
         fertilizer_reduction_units = uom_properties[0]["Reduction In Fertilizer"]
 
-        # assign 'input_collection_id' variable from file-level attributes for testing
-        collection_ID = file_level_attributes.get('CollectionId', 'test_collection_1') # <-- need to be replaced with actual implementation
+        # extract 'input_input_collection_id' variable from file-level attributes for testing
+        input_collection_id = file_level_attributes.get('CollectionId', 'test_collection_1') # <-- need to be replaced with actual implementation
 
         # Assign 'season' variable from file-level attributes for testing
         #  - season should be type str or int with current year (2024)
@@ -111,7 +123,7 @@ def calculator_function(data, global_variables, logger, soc):
         features = data['GeoJSON']['features']
 
 
-        # ================== Section 4 Process Features Array =========================
+        # ================== SECTION 4 Process Features Array =========================
         # ----------------- PROCESSING EACH FEATURE ONE BY ONE ----------------
                 
         # Section 4 Process features array
@@ -215,7 +227,7 @@ def calculator_function(data, global_variables, logger, soc):
             crop_Insecticide_g_Acre = feature['properties'].get('Insecticide', 0)
             coverCrop = feature['properties'].get('Cover Crop Used', 'N/A').lower()
             coverCrop_Energy_BTU = feature['properties'].get('Cover Crop Energy', 0)
-            covercrop_yield = feature['properties'].get('Cover Crop Yield', 1)
+            coverCrop_Yield = feature['properties'].get('Cover Crop Yield', 1)
             coverCrop_Herbicide_g_Acre = feature['properties'].get('Cover Crop Herbicide', 0)
             manure_Swine_Ton_Acre = feature['properties'].get('Swine Manure', 0)
             manure_Cow_Ton_Acre = feature['properties'].get('Dairy Cow Manure', 0)
@@ -314,7 +326,7 @@ def calculator_function(data, global_variables, logger, soc):
 
             default_coverCrop_Energy_BTU_Acre = 0 if coverCrop == "no cover crop" else 62060
             default_coverCrop_Herbicide_g_Acre = 0 if coverCrop == "no cover crop" else 612.3496995
-            default_covercrop_yield_Ton_Acre = 0 if coverCrop == "no cover crop" else 1.21405880091459
+            default_coverCrop_Yield_Ton_Acre = 0 if coverCrop == "no cover crop" else 1.21405880091459
             default_Manure_Swine_Ton_Acre = 0 if manureUsed == "no manure" else 7.854 * 0.243
             default_Manure_Cow_Ton_Acre = 0 if manureUsed == "no manure" else 7.854 * 0.423
             default_Manure_Beef_Ton_Acre = 0 if manureUsed == "no manure" else 7.854 * 0.216
@@ -407,9 +419,9 @@ def calculator_function(data, global_variables, logger, soc):
             # Cover crop metrics (L50-L52)
             if coverCrop == "cover crop":
                 # Calculate metrics when cover crop is present
-                coverCrop_Energy_BTU_Bu = coverCrop_Energy_BTU / covercrop_yield
-                coverCrop_Herbicide_g_Bu = coverCrop_Herbicide_g_Acre / covercrop_yield
-                coverCropN_gN_Bu = covercrop_yield * Rye_Ninbiomass_ResidueFactor / crop_yield
+                coverCrop_Energy_BTU_Bu = coverCrop_Energy_BTU / coverCrop_Yield
+                coverCrop_Herbicide_g_Bu = coverCrop_Herbicide_g_Acre / coverCrop_Yield
+                coverCropN_gN_Bu = coverCrop_Yield * Rye_Ninbiomass_ResidueFactor / crop_yield
             else:
                 # Initialize variables to 0 when no cover crop
                 coverCrop_Energy_BTU_Bu = 0
@@ -517,7 +529,7 @@ def calculator_function(data, global_variables, logger, soc):
             default_coverCrop_Herbicide_g_Bu = default_coverCrop_Herbicide_g_Acre / default_Yield
             default_intermediates.append(('default_coverCrop_Herbicide_g_Bu', 'M51', default_coverCrop_Herbicide_g_Bu))
 
-            default_coverCropN_gN_Bu = default_covercrop_yield_Ton_Acre * Rye_Ninbiomass_ResidueFactor
+            default_coverCropN_gN_Bu = default_coverCrop_Yield_Ton_Acre * Rye_Ninbiomass_ResidueFactor
             default_intermediates.append(('default_coverCropN_gN_Bu', 'M52', default_coverCropN_gN_Bu))
 
             # Manure metrics (M59-M67)
@@ -1285,6 +1297,16 @@ def calculator_function(data, global_variables, logger, soc):
             # Convert score to MJ/Bu
             CI_Score_B = CI_Score_A  / 224.1525
             crop_scores.append(('CI_Score_B', '(computed)', CI_Score_B))
+    
+            # (computed)	CI_Score_C	 
+            # Convert score to ton GHG (total)
+            CI_Score_C = CI_Score_A * bushel_Amount / 907184.74 # g/ton
+            crop_scores.append(('CI_Score_C', '(computed)', CI_Score_C))
+    
+            # (computed)	cert_value 	 
+            # $ value of the certificate ($10 * crop_area)
+            cert_value = crop_area * 10
+            crop_scores.append(('cert_value', '(computed)', cert_value))
 
             # *** FOR TESTING: LOG FORMATTED CROP SCORES ***************
             # # logger.info crop_scores: Custom formatting with alignment
@@ -1322,32 +1344,29 @@ def calculator_function(data, global_variables, logger, soc):
             # *** END TESTING: LOG FORMATTED FEATURE SCORES ***************
             
             # ----------- END PROCESSING EACH FEATURE ONE BY ONE--------------------------
-        # =============== END SCORE CALCULATIONS =====================================
+        # ========== END SECTION 4 - SCORE CALCULATIONS ==================================
             
             
-        # =========== START Section 5 - Generate Individual CIS Certs & Store ==============
+        
+        # =================================================================================
+        # =========== START SECTION 5 - Generate Individual CIS Certs & Store ==============
         # --- uses feature_scores array to build CIS Certs for each crop (field)
         # needs:
         # import json
         # from datetime import datetime
+        import secrets
         
         # -- FOR TESTING ONLY --
         # generate_certs = True  # Force to True to test generating certificates
         # -- FOR TESTING ONLY --
+        
+        # requires import secrets
+        def generate_32bit_id():
+            return secrets.randbits(32)
 
-        """
-        Generates JSON objects from feature_scores and saves to files.
-
-        Args:
-            feature_scores (list): List of feature score dictionaries
-            collection_id (str): Collection ID for the dataset
-            
-        Returns:
-            str: Path to the saved JSON file
-        """
-
-        # --- START if generate_certs code block --------------------------
+        # --- START "if generate_certs" code block --------------------------
         if generate_certs:
+            
             # helper function to get a score value from the nested list structure
             def get_score(scores_list, key_name):
                 """Helper function to find a score value from the nested list structure"""
@@ -1369,10 +1388,10 @@ def calculator_function(data, global_variables, logger, soc):
                     raise ValueError(f"Length mismatch: feature_scores has {len(feature_scores)} elements while features has {len(features)} elements")
 
                 # use certificate_type to determine how many certificates to generate
-                if certificate_type == "TEST": certs_to_generate = 2
+                if "diag" in certificate_type.lower(): certs_to_generate = 2
                 else: certs_to_generate = length_feature_scores
                 
-                # ------------ START Step through each feature_score and build cis_json ----------
+                # ------------ STEP THROUGH EACH feature_score and build cis_json ----------
                 logger.info(f".. now processing {certs_to_generate}/{len(feature_scores)} records...") 
                  
                 for index in range(certs_to_generate): # Process all features (real mode)
@@ -1382,16 +1401,31 @@ def calculator_function(data, global_variables, logger, soc):
                     try:
                         # get current feature properties dictionary
                         properties_element = features[index]['properties']
-                        planting_ID = properties_element.get('PlantingId', 'N/A')
                         
-                        # begin building the CIS JSON object
+                        # set planting_ID & certificates_ID's 
+                        planting_ID = properties_element.get('PlantingId', 'N/A')
+                        certificate_ID = f"{certificate_type}-{planting_ID}"
+                
+                        # --- Fetch the Millpont uniquiness ID ----------------------------
+                        # get (generate) a millpont uniqueness id
+                        # 1. pass the features[index] to the millpont API to get a unique id
+                        # 2. save the unique id to the 'millpont_ID' field in the properties_element dictionary
+                        # generate a python uuid
+                        millpont_ID = generate_32bit_id()
+                        
+                        # --- now begin building the new certificate JSON object ----------
                         cis_json = { 
                             "Data Type": "CI Score",
                             "Certificate Type": certificate_type,
-                            "CIS_ID": f"CIS-{planting_ID}",
-                            "DateTime of Creation": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),    
+                            "cert_value": get_score(feature_score['cert_value'], "cert_value"),
+                            "CIS_ID": certificate_ID,
+                            "Millpont ID": millpont_ID,
+                            "DateTime of Creation": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),   
+                            "billing_status": "not billed",
+                            "owner_Id": "Ravah Carbon",
+                            "owner_timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                             "Data Provider": data_Provider,
-                            "CollectionId": collection_ID,
+                            "CollectionId": input_collection_id,
                             "BusinessId": business_ID,
                             "Attested By 1": file_level_attributes.get('Attested By 1', 'N/A'),
                             "Signature 1": file_level_attributes.get('Signature 1', 'N/A'),
@@ -1411,20 +1445,22 @@ def calculator_function(data, global_variables, logger, soc):
                             "UOM": {
                                 "Average Crop Price": "U$",  
                                 "Crop Value": "U$",  
-                                "Carbon Intensity Score A": "g GHG per Bu",  
-                                "Carbon Intensity Score B": "g GHG per MJ",
+                                "Certificate Value": "U$", 
+                                "Score A": "g GHG/Bu",  
+                                "Score B": "g GHG/MJ",  
+                                "Score C": "ton GHG",
                                 "Energy": "g GHG per Bu",
-                                "Nitrogen Fertilizer": "g GHG per Bu",
-                                "N2O Emissions": "g GHG per Bu",
-                                "CO2 Emissions": "g GHG per Bu",
-                                "CH4 Emissions": "g GHG per Bu",
-                                "Other Chemicals": "g GHG per Bu",
-                                "CI Score Total": "g GHG per MJ",
-                                "Default SOC": "g GHG per MJ",
+                                "Nitrogen Fertilizer": "g GHG/Bu",
+                                "N2O Emissions": "g GHG/Bu",
+                                "CO2 Emissions": "g GHG/Bu",
+                                "CH4 Emissions": "g GHG/Bu",
+                                "Other Chemicals": "g GHG/Bu",
+                                "CI Score Total": "g GHG/MJ",
+                                "Default SOC": "g GHG/MJ",
                                 "Farm Size": "Acres",  
                                 "Crop Area": "Acres",  
                                 "Yield": "Bushels/Acre"  
-                                },
+                            },
                             "Crop Area": properties_element.get('Crop Area', 'N/A'),
                             "Yield": properties_element.get('Yield', 'N/A'),
                             "Bushel Amount": get_score(feature_score['crop_scores'], "bushel_Amount"),
@@ -1434,6 +1470,8 @@ def calculator_function(data, global_variables, logger, soc):
                             "GREET Default Score B": get_score(feature_score['default_scores'], "default_ScoreB"),
                             "CI Score A": get_score(feature_score['crop_scores'], "CI_Score_A"),
                             "CI Score B": get_score(feature_score['crop_scores'], "CI_Score_B"),
+                            "CI Score C": get_score(feature_score['crop_scores'], "CI_Score_C"),
+                            "Certificate Value": get_score(feature_score['cert_value'], "cert_value"),
                             "GREET Default Scoring Elements": {
                                 "Energy": get_score(feature_score['default_scores'], "default_Result_Energy"),
                                 "Nitrogen Fertilizer": get_score(feature_score['default_scores'], "default_Result_NitrogenFertilizer"),
@@ -1455,33 +1493,46 @@ def calculator_function(data, global_variables, logger, soc):
                                 "Crop SOC": get_score(feature_score['crop_scores'], "crop_SOC"),
                             },
                             "GeoJSON": {
-                            "type": "FeatureCollection",  
-                            "features": [features[index]]
+                                "type": "FeatureCollection",  
+                                "features": [features[index]]
                             }  
                         }
-                        # --- END building the cis_json object ----------
+                        # --- END building the cis_json object -------------------------------
                         
-                        # *** SAVE Cert To File for testing purposes ************
-                        # Generate filename with input collection ID and save to file
-                        filename = f"CIS-{planting_ID}.json"
+                        # ---- TESTING -- Generate output file for this CIS JSON Object ----
+                        # Generate filename with input certificate_type & plantingID, save to file
+                        name = f"{certificate_ID}.json"
                         # Save to file with nice formatting
-                        with open(filename, 'w') as f:
+                        with open(name, 'w') as f:
                             json.dump(cis_json, f, indent=2)
-                        logger.info(f"File should be saved as: {filename}")
-                        # *** END SAVE Cert To File for testing purposes ********
+                        logger.info(f"File should be saved as: {name}")
+                        # ---- END SAVE Cert To File for testing purposes -------------------
                         
-                        # **************************************************************
-                        # --- INSERT Code to call graphQL API to insert the CIS record
-                        # Example code to insert a CIS record using a GraphQL client
-                        # Assuming 'graphql_client' is a GraphQL client instance
-                        # Assuming 'cis_json' is the CIS record as a Python dictionary
-                        # Example:
-                        # graphql_client.execute(
-                        #     mutation=insert_cis_record,
-                        #     variables={"cisRecord": cis_json},
-                        # )
-                        # --- END Code to call graphQL API to insert the CIS record
-                        # ****************************************************************
+                        # # ********* SAVE TO GCR USING GRAPHQL *********** DEPRECATED ********
+                        # # --- Tested in Jupyter Notebook - now deprecated for deltalake -------
+                        # # --- INSERT Code to call graphQL API to insert the CIS record
+                        # # Convert cis_json to string
+                        # object_string = json.dumps(cis_json)
+                
+                        # # call 'save_to_graphql' function # -> see jupyter notebook test code for this section
+                        # result = save_to_graphql(certificate_ID, object_string)
+                        # # --- END Code to call graphQL API to insert the CIS record
+                        # # *********************************************************************
+                        
+                        # ********* DELTA LAKE IMPLEMENTATION GOES HERE **************************
+                        # --- INSERT Code to call Delta Lake API to insert the CIS record
+                        # # Convert cis_json to string
+                        # object_string = json.dumps(cis_json)
+
+                        # # call 'insert_to_delta_lake' function # -> see jupyter notebook test code for this section
+                        # result = insert_to_delta_lake(input_collection_id, object_string)
+                        # # --- END Code to call Delta Lake API to insert the CIS record
+                        # *********************************************************************                      
+
+                        # --- create a feature_scores 'certificate_generated' element ---
+                        # - note: it might be nice to use the cert name from the result of persistence operation
+                        # this element will be referenced in section 6 generating the agC Results Collection
+                        feature_scores[index]["certificate_generated"] = certificate_ID # aka certificate name or ID
                         
                     except IndexError:
                         logger.error(f"Error: Could not access index {index} in features list")
@@ -1499,21 +1550,21 @@ def calculator_function(data, global_variables, logger, soc):
         # ============== END Section 5 - Generate Individual CIS Scores ==============
         
         
-        
-        # =========== Section 6 Build the agC Results Collection ==========================
+        # =======================================================================
+        # =========== SECTION 6 agC Results Collection ==========================
         # --- uses feature_scores array to build the agC ResultsCollection
-        # Section 5 - Build the agC ResultsCollection
+        # Section 6 - Build the agC ResultsCollection
         # needs:
-        # import json
-        # from datetime import datetime
+        # - import json
+        # - from datetime import datetime
 
-        def generate_feature_scores_json(feature_scores, collection_id):
+        def generate_feature_scores_json(feature_scores, input_collection_id):
             """
             Generates a JSON object from feature scores and saves it to a file.
             
             Args:
                 feature_scores (list): List of feature score dictionaries
-                input_collection_id (str): Collection ID for the dataset
+                input_input_collection_id (str): Collection ID for the dataset
                 
             Returns:
                 str: Path to the saved JSON file
@@ -1530,7 +1581,7 @@ def calculator_function(data, global_variables, logger, soc):
 
             json_structure = {
                 "Data Type": "ResultsCollection",
-                "Collection ID": collection_ID,
+                "Collection ID": input_collection_id,
                 "Date of Creation": datetime.now().strftime("%Y-%m-%d"),
                 "Data Provider": "agCommander",
                 "Generate Certificates": generate_certificates,
@@ -1545,6 +1596,14 @@ def calculator_function(data, global_variables, logger, soc):
                 },
                 "Data": []
             }
+            
+            # if generate_certs bool true, add cert info to json_structure
+            if generate_certs:
+                cert_info = {
+                    "Certificate Generated": feature_score.get('certificate_generated'),
+                    "Certificate Type": feature_score.get('certificate_type')
+                }
+                json_structure['Data'].append(cert_info)
             
             # Process each feature score
             for feature_score in feature_scores:
@@ -1597,7 +1656,7 @@ def calculator_function(data, global_variables, logger, soc):
             # filename = f"feature_scores_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             
             # Example: Generate filename with input collection ID
-            # filename = f"feature_scores_{collection_id}.json"
+            # filename = f"feature_scores_{input_collection_id}.json"
             
             # Save to file with nice formatting
             # with open(filename, 'w') as f:
@@ -1607,7 +1666,7 @@ def calculator_function(data, global_variables, logger, soc):
             return json_structure
 
         # **** USE FOR TESTING ONLY - DON'T RUN IN PRODUCTION ---------------------
-        # output_file = generate_feature_scores_json(feature_scores, collection_ID)
+        # output_file = generate_feature_scores_json(feature_scores, input_collection_id)
         # logger.info(f"File should be saved as: {output_file}")
         
         # =========== END Section 6 Build the agC Results Collection ======================
@@ -1616,7 +1675,7 @@ def calculator_function(data, global_variables, logger, soc):
         
         # ---------- RETURN FEATURE SCORES ARRAY -----------------------------
         # (this is still in the 'Try..Except' block)
-        return generate_feature_scores_json(feature_scores, collection_ID)
+        return generate_feature_scores_json(feature_scores, input_collection_id)
     
         # # --- example of returning a sample result --------
         # result_value = data["value1"] + data["value2"] + Herbicide_CI

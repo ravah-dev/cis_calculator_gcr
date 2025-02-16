@@ -4,5 +4,24 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"cSpell.words": [
+			"asctime",
+			"asynccontextmanager",
+			"contextlib",
+			"Diammonium",
+			"fert",
+			"fips",
+			"getcwd",
+			"getenv",
+			"levelname",
+			"Millpont",
+			"Monoammonium",
+			"Nfert",
+			"Nfixation",
+			"Ninbiomass",
+			"Procfile",
+			"uniquiness"
+		]
+	}
 }

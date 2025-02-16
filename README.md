@@ -21,7 +21,8 @@ You can change this using:
 1. **Directory cis_calculator_gcr**:  
 
 2. **Virtual Environment**:  
-    A **virtual environment** is an isolated Python environment where you can install libraries and packages specific to your project without affecting other Python projects or the system-wide Python installation.  
+    A **virtual environment** is an isolated Python environment where you can install libraries and packages 
+    specific to your project without affecting other Python projects or the system-wide Python installation.  
    - Create a virtual environment: `python3 -m venv venv`.
    - Activate it: `source venv/bin/activate`.
 
@@ -111,6 +112,7 @@ You can change this using:
 ---
 
 #### **How It Works in Docker**
+
 1. When the container starts, Docker runs the `CMD` instruction.
 2. `uvicorn` starts the FastAPI application defined in `main.py` and makes it accessible on `http://0.0.0.0:8080` within the container.
 3. If you’ve mapped the container port to a host port (e.g., `-p 8080:8080` in Docker run), you can access the application from your machine using `http://localhost:8080`.
@@ -118,18 +120,23 @@ You can change this using:
 ---
 
 ### **Example Usage**
-#### Building the Image:
+
+#### Building the Image
+
 ```bash
 docker build -t my-fastapi-app .
 ```
 
-#### Running the Container:
+#### Running the Container
+
 ```bash
 docker run -p 8080:8080 my-fastapi-app
 ```
 
-#### Accessing the Application:
+#### Accessing the Application
+
 Open your browser or use a tool like `curl` or Postman to access:
+
 ```bash
 http://localhost:8080
 ```
@@ -137,16 +144,18 @@ http://localhost:8080
 ---
 
 ### **Customizing the Command**
+
 You can override the `CMD` in your `Dockerfile` when running the container:
+
 ```bash
 docker run -p 8080:8080 my-fastapi-app uvicorn main:app --host 0.0.0.0 --port 9090
 ```
+
 This runs the app on port `9090` instead of the default `8080`.
 
 ---
 
 Let me know if you need more details or further clarification! 😊
-
 
 **Build the Docker Image**:
 
@@ -162,7 +171,7 @@ Let me know if you need more details or further clarification! 😊
 
 - Test the API by sending requests to `http://localhost:8080`.  
   
-# Deploy to Google Cloud Run  
+## Deploy to Google Cloud Run  
 
 See 'gcr_deploy.md' for instructions...  
 
