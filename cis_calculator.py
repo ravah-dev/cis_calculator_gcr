@@ -18,7 +18,8 @@ from class_state_to_abbr import StateNameToAbbr
 from class_fips_lookup import FIPSLookup # for step 5 of calculator
 
 # ----- imports for Steps 5 & 6  --------------------
-import json
+from certificate_generator import certificate_generator
+from create_feature_scores_collection import create_feature_scores_collection
 from datetime import datetime
 
 globals_initialized = False
@@ -146,17 +147,18 @@ def calculator_function(data, global_variables, logger, soc):
             # ------------------ bbox calculation using lat/lng coordinates -------------------------------
             # -- for future reference: the coordinates pairs in the geometry object are in the format [lng, lat]
             try:
-                # **** Get the bbox array and initialize a centroid ************
-                
+                # **** Get the bbox array and initialize a centroid ************                
                 # -- bbox may be in the geometry object or at the feature root level
                 # Check if bbox exists at the root level of the feature
                 # -- Note: The bbox array at feature root is standard format [lat_min, lng_min, lat_max, lng_max]
                 feature_bbox = feature.get("bbox")
 
-                # If not found, check if it exists in the geometry object
-                # -- Note: The bbox array in the geometry object is the format [lng_min, lat_min, lng_max, lat_max]
+                # If bbox not found, check if it exists in the geometry object
+                # -- Note: The bbox array in the geometry object 
+                #   is the format [lng_min, lat_min, lng_max, lat_max]
                 if feature_bbox is None and "geometry" in feature:
                     feature_bbox = feature["geometry"].get("bbox")
+                    # check order of lng_min, lat_min, lng_max, lat_max, standardize
                     if feature_bbox[0] < 1:
                         # Convert from [lng_min, lat_min, lng_max, lat_max] to [lat_min, lng_min, lat_max, lng_max]
                         feature_bbox = [feature_bbox[1], feature_bbox[0], feature_bbox[3], feature_bbox[2]]
@@ -184,6 +186,17 @@ def calculator_function(data, global_variables, logger, soc):
                 # Handle specific exceptions
                 logger.error(f"Error processing feature: {str(e)}")
                 centroid = []
+
+            # **** get geometry, input_properties *****************************
+            geometry = feature.get('geometry')
+            input_properties = feature.get('properties')
+            
+            # **** get crop-specific feature properties ********************************************
+            # - Note: The crop-specific properties are not included in the GeoJSON structure.
+            # - Roger will need to add them to the GeoJSON structure and adjust this section to extract them.
+            #   - For example, the crop-specific properties could be included in the "properties" object
+            #   - Or, the crop-specific properties could be included in a separate JSON file that is referenced in the GeoJSON structure
+            #   - For this example, we will assume the crop-specific properties are included in the GeoJSON structure
 
             # Assign crop-specific feature properties to Global variables
             business_ID = feature['properties'].get('BusinessId', 'N/A')
@@ -1343,346 +1356,49 @@ def calculator_function(data, global_variables, logger, soc):
             # logger.info(f"Crop Scores: {feature_scores[0]['crop_scores']}")
             # *** END TESTING: LOG FORMATTED FEATURE SCORES ***************
             
-            # ----------- END PROCESSING EACH FEATURE ONE BY ONE--------------------------
-        # ========== END SECTION 4 - SCORE CALCULATIONS ==================================
+            # ----------- END PROCESSING EACH FEATURE ONE BY ONE------------------
+        # ========== END SECTION 4 - SCORE CALCULATIONS ==========================
             
             
         
-        # =================================================================================
-        # =========== START SECTION 5 - Generate Individual CIS Certs & Store ==============
-        # --- uses feature_scores array to build CIS Certs for each crop (field)
-        # needs:
-        # import json
-        # from datetime import datetime
-        import secrets
-        
-        # -- FOR TESTING ONLY --
-        # generate_certs = True  # Force to True to test generating certificates
-        # -- FOR TESTING ONLY --
-        
-        # requires import secrets
-        def generate_32bit_id():
-            return secrets.randbits(32)
-
-        # --- START "if generate_certs" code block --------------------------
+        # =========================================================================
+        # ====================== START SECTION 5  =================================
+        # --- externalized to certificate_generator.py ----------------------------
+        # - uses feature_scores array to build CIS Certs for each crop (field)
         if generate_certs:
-            
-            # helper function to get a score value from the nested list structure
-            def get_score(scores_list, key_name):
-                """Helper function to find a score value from the nested list structure"""
-                for item in scores_list:
-                    if item[0] == key_name:
-                        # if the value is a float, round to 2 decimal places else return as is
-                        if isinstance(item[2], float):
-                            return round(item[2], 2)
-                        return item[2]
-                return None
-
-            # ---------------- Process feature scores --------------------------
-            # get length of feature_scores
-            length_feature_scores = len(feature_scores)
-            
-            try:
-                # verify the feature_scores & features lengths match
-                if len(feature_scores) != len(features):
-                    raise ValueError(f"Length mismatch: feature_scores has {len(feature_scores)} elements while features has {len(features)} elements")
-
-                # use certificate_type to determine how many certificates to generate
-                if "diag" in certificate_type.lower(): certs_to_generate = 2
-                else: certs_to_generate = length_feature_scores
-                
-                # ------------ STEP THROUGH EACH feature_score and build cis_json ----------
-                logger.info(f".. now processing {certs_to_generate}/{len(feature_scores)} records...") 
-                 
-                for index in range(certs_to_generate): # Process all features (real mode)
-                    
-                    feature_score = feature_scores[index]
-                    # Extract data from feature_score
-                    try:
-                        # get current feature properties dictionary
-                        properties_element = features[index]['properties']
-                        
-                        # set planting_ID & certificates_ID's 
-                        planting_ID = properties_element.get('PlantingId', 'N/A')
-                        certificate_ID = f"{certificate_type}-{planting_ID}"
-                
-                        # --- Fetch the Millpont uniquiness ID ----------------------------
-                        # get (generate) a millpont uniqueness id
-                        # 1. pass the features[index] to the millpont API to get a unique id
-                        # 2. save the unique id to the 'millpont_ID' field in the properties_element dictionary
-                        # generate a python uuid
-                        millpont_ID = generate_32bit_id()
-                        
-                        # --- now begin building the new certificate JSON object ----------
-                        cis_json = { 
-                            "Data Type": "CI Score",
-                            "Certificate Type": certificate_type,
-                            "cert_value": get_score(feature_score['cert_value'], "cert_value"),
-                            "CIS_ID": certificate_ID,
-                            "Millpont ID": millpont_ID,
-                            "DateTime of Creation": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),   
-                            "billing_status": "not billed",
-                            "owner_Id": "Ravah Carbon",
-                            "owner_timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                            "Data Provider": data_Provider,
-                            "CollectionId": input_collection_id,
-                            "BusinessId": business_ID,
-                            "Attested By 1": file_level_attributes.get('Attested By 1', 'N/A'),
-                            "Signature 1": file_level_attributes.get('Signature 1', 'N/A'),
-                            "Attested DateTime 1": file_level_attributes.get('Attested DateTime 1', 'N/A'),
-                            "Attested By 2": file_level_attributes.get('Attested By 2', 'N/A'), 
-                            "Signature 2": file_level_attributes.get('Signature 2', 'N/A'),
-                            "Attested DateTime 2": file_level_attributes.get('Attested DateTime 2', 'N/A'),
-                            "Crop": properties_element.get('Crop', 'N/A'),
-                            "PlantingId": planting_ID,
-                            "Season": season,
-                            "FarmId": properties_element.get('FarmId', 'N/A'),
-                            "FieldId": properties_element.get('FieldId', 'N/A'),
-                            "Country": file_level_attributes.get('Country','United States'),
-                            "State": properties_element.get('State', 'N/A'),
-                            "County": properties_element.get('County', 'N/A'),
-                            "Centroid": get_score(feature_score['crop_scores'], "centroid"),
-                            "UOM": {
-                                "Average Crop Price": "U$",  
-                                "Crop Value": "U$",  
-                                "Certificate Value": "U$", 
-                                "Score A": "g GHG/Bu",  
-                                "Score B": "g GHG/MJ",  
-                                "Score C": "ton GHG",
-                                "Energy": "g GHG per Bu",
-                                "Nitrogen Fertilizer": "g GHG/Bu",
-                                "N2O Emissions": "g GHG/Bu",
-                                "CO2 Emissions": "g GHG/Bu",
-                                "CH4 Emissions": "g GHG/Bu",
-                                "Other Chemicals": "g GHG/Bu",
-                                "CI Score Total": "g GHG/MJ",
-                                "Default SOC": "g GHG/MJ",
-                                "Farm Size": "Acres",  
-                                "Crop Area": "Acres",  
-                                "Yield": "Bushels/Acre"  
-                            },
-                            "Crop Area": properties_element.get('Crop Area', 'N/A'),
-                            "Yield": properties_element.get('Yield', 'N/A'),
-                            "Bushel Amount": get_score(feature_score['crop_scores'], "bushel_Amount"),
-                            "Average Crop Price": properties_element.get('Average Crop Price', 6.01),
-                            "Crop Value": get_score(feature_score['crop_scores'], "crop_Value"),
-                            "GREET Default Score A": get_score(feature_score['default_scores'], "default_ScoreA"),
-                            "GREET Default Score B": get_score(feature_score['default_scores'], "default_ScoreB"),
-                            "CI Score A": get_score(feature_score['crop_scores'], "CI_Score_A"),
-                            "CI Score B": get_score(feature_score['crop_scores'], "CI_Score_B"),
-                            "CI Score C": get_score(feature_score['crop_scores'], "CI_Score_C"),
-                            "Certificate Value": get_score(feature_score['cert_value'], "cert_value"),
-                            "GREET Default Scoring Elements": {
-                                "Energy": get_score(feature_score['default_scores'], "default_Result_Energy"),
-                                "Nitrogen Fertilizer": get_score(feature_score['default_scores'], "default_Result_NitrogenFertilizer"),
-                                "N2O Emissions": get_score(feature_score['default_scores'], "default_Result_N2O_Emissions"),
-                                "CO2 Emissions": get_score(feature_score['default_scores'], "default_Result_CO2_Emissions"),
-                                "CH4 Emissions": get_score(feature_score['default_scores'], "default_Result_CH4_Emissions"),
-                                "Other Chemicals": get_score(feature_score['default_scores'], "default_Result_OtherChemicals"),
-                                "CI Score Total": get_score(feature_score['default_scores'], "default_CI_Total"),
-                                "Default SOC": get_score(feature_score['default_scores'], "default_SOC"),
-                            },
-                            "Crop Scoring Elements": {
-                                "Energy": get_score(feature_score['crop_scores'], "crop_Result_Energy"),
-                                "Nitrogen Fertilizer": get_score(feature_score['crop_scores'], "CI_Score_NitrogenFertilizer"),
-                                "N2O Emissions": get_score(feature_score['crop_scores'], "crop_Result_N2O_Emissions"),
-                                "CO2 Emissions": get_score(feature_score['crop_scores'], "crop_Result_CO2_Emissions"),
-                                "CH4 Emissions": get_score(feature_score['crop_scores'], "crop_Result_CH4_Emissions"),
-                                "Other Chemicals": get_score(feature_score['crop_scores'], "crop_Result_OtherChemicals"),
-                                "CI Score Total": get_score(feature_score['crop_scores'], "CI_Score_Total"),
-                                "Crop SOC": get_score(feature_score['crop_scores'], "crop_SOC"),
-                            },
-                            "GeoJSON": {
-                                "type": "FeatureCollection",  
-                                "features": [features[index]]
-                            }  
-                        }
-                        # --- END building the cis_json object -------------------------------
-                        
-                        # ---- TESTING -- Generate output file for this CIS JSON Object ----
-                        # Generate filename with input certificate_type & plantingID, save to file
-                        name = f"{certificate_ID}.json"
-                        # Save to file with nice formatting
-                        with open(name, 'w') as f:
-                            json.dump(cis_json, f, indent=2)
-                        logger.info(f"File should be saved as: {name}")
-                        # ---- END SAVE Cert To File for testing purposes -------------------
-                        
-                        # # ********* SAVE TO GCR USING GRAPHQL *********** DEPRECATED ********
-                        # # --- Tested in Jupyter Notebook - now deprecated for deltalake -------
-                        # # --- INSERT Code to call graphQL API to insert the CIS record
-                        # # Convert cis_json to string
-                        # object_string = json.dumps(cis_json)
-                
-                        # # call 'save_to_graphql' function # -> see jupyter notebook test code for this section
-                        # result = save_to_graphql(certificate_ID, object_string)
-                        # # --- END Code to call graphQL API to insert the CIS record
-                        # # *********************************************************************
-                        
-                        # ********* DELTA LAKE IMPLEMENTATION GOES HERE **************************
-                        # --- INSERT Code to call Delta Lake API to insert the CIS record
-                        # # Convert cis_json to string
-                        # object_string = json.dumps(cis_json)
-
-                        # # call 'insert_to_delta_lake' function # -> see jupyter notebook test code for this section
-                        # result = insert_to_delta_lake(input_collection_id, object_string)
-                        # # --- END Code to call Delta Lake API to insert the CIS record
-                        # *********************************************************************                      
-
-                        # --- create a feature_scores 'certificate_generated' element ---
-                        # - note: it might be nice to use the cert name from the result of persistence operation
-                        # this element will be referenced in section 6 generating the agC Results Collection
-                        feature_scores[index]["certificate_generated"] = certificate_ID # aka certificate name or ID
-                        
-                    except IndexError:
-                        logger.error(f"Error: Could not access index {index} in features list")
-                        break
-                    # ----------- END of try-except block ------ Extract data from feature_score -----
-                # ----------- END of For loop - feature_score in feature_scores -----
-                    
-            except Exception as e:
-                logger.error(f"An unexpected error occurred: {str(e)}")
-            # ----------- END of try-except block - Process feature scores -----------
-        # ----------- END of if generate_certs code block ------------------------
-        
-        # example Generate filename with timestamp
-        # filename = f"feature_scores_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        # ============== END Section 5 - Generate Individual CIS Scores ==============
+            feature_scores = certificate_generator(
+                feature_scores=feature_scores,
+                features=features,
+                certificate_type=certificate_type,
+                season=season,
+                data_Provider=data_Provider,
+                input_collection_id=input_collection_id,
+                business_ID=business_ID,
+                file_level_attributes=file_level_attributes,
+                fips_code=fips_code,
+                input_properties=input_properties,
+                bbox=bbox,
+                geometry=geometry
+            )
         
         
         # =======================================================================
         # =========== SECTION 6 agC Results Collection ==========================
-        # --- uses feature_scores array to build the agC ResultsCollection
-        # Section 6 - Build the agC ResultsCollection
-        # needs:
-        # - import json
-        # - from datetime import datetime
-
-        def generate_feature_scores_json(feature_scores, input_collection_id):
-            """
-            Generates a JSON object from feature scores and saves it to a file.
-            
-            Args:
-                feature_scores (list): List of feature score dictionaries
-                input_input_collection_id (str): Collection ID for the dataset
-                
-            Returns:
-                str: Path to the saved JSON file
-            """
-            def get_score(scores_list, key_name):
-                """Helper function to find a score value from the nested list structure"""
-                for item in scores_list:
-                    if item[0] == key_name:
-                        # if the value is a float, round to 2 decimal places else return as is
-                        if isinstance(item[2], float):
-                            return round(item[2], 2)
-                        return item[2]
-                return None
-
-            json_structure = {
-                "Data Type": "ResultsCollection",
-                "Collection ID": input_collection_id,
-                "Date of Creation": datetime.now().strftime("%Y-%m-%d"),
-                "Data Provider": "agCommander",
-                "Generate Certificates": generate_certificates,
-                "UOM": {
-                    "Average Crop Price": "U$",
-                    "Crop Value": "U$",
-                    "Carbon Intensity Score A": "g GHG per Bu",
-                    "Carbon Intensity Score B": "g GHG per MJ",
-                    "Farm Size": "Acres",
-                    "Crop Area": "Acres",
-                    "Yield": "Bushels/Acre"
-                },
-                "Data": []
-            }
-            
-            # if generate_certs bool true, add cert info to json_structure
-            if generate_certs:
-                cert_info = {
-                    "Certificate Generated": feature_score.get('certificate_generated'),
-                    "Certificate Type": feature_score.get('certificate_type')
-                }
-                json_structure['Data'].append(cert_info)
-            
-            # Process each feature score
-            for feature_score in feature_scores:
-                data_entry = {
-                    "Planting ID": feature_score.get('planting_id'),
-                    "Crop": feature_score.get('crop'),
-                    "Default Scores": {
-                        "Energy": get_score(feature_score['default_scores'], "default_Result_Energy"),
-                        "Nitrogen Fertilizer": get_score(feature_score['default_scores'], "default_Result_NitrogenFertilizer"),
-                        "N2O Emissions": get_score(feature_score['default_scores'], "default_Result_N2O_Emissions"),
-                        "CO2 Emissions": get_score(feature_score['default_scores'], "default_Result_CO2_Emissions"),
-                        "CH4 Emissions": get_score(feature_score['default_scores'], "default_Result_CH4_Emissions"),
-                        "Other Chemicals": get_score(feature_score['default_scores'], "default_Result_OtherChemicals"),
-                        "CI Score Total": get_score(feature_score['default_scores'], "default_CI_Total"),
-                        "Default SOC": get_score(feature_score['default_scores'], "default_SOC"),
-                        "GREET Default Score A": get_score(feature_score['default_scores'], "default_ScoreA"),
-                        "GREET Default Score B": get_score(feature_score['default_scores'], "default_ScoreB")
-                    },
-                    "Crop Scores": {
-                        "Energy": get_score(feature_score['crop_scores'], "crop_Result_Energy"),
-                        "Nitrogen Fertilizer": get_score(feature_score['crop_scores'], "CI_Score_NitrogenFertilizer"),
-                        "N2O Emissions": get_score(feature_score['crop_scores'], "crop_Result_N2O_Emissions"),
-                        "CO2 Emissions": get_score(feature_score['crop_scores'], "crop_Result_CO2_Emissions"),
-                        "CH4 Emissions": get_score(feature_score['crop_scores'], "crop_Result_CH4_Emissions"),
-                        "Other Chemicals": get_score(feature_score['crop_scores'], "crop_Result_OtherChemicals"),
-                        "CI Score Total": get_score(feature_score['crop_scores'], "CI_Score_Total"),
-                        "Crop SOC": get_score(feature_score['crop_scores'], "crop_SOC"),
-                        "CI Score A": get_score(feature_score['crop_scores'], "CI_Score_A"),
-                        "CI Score B": get_score(feature_score['crop_scores'], "CI_Score_B")
-                    },
-                    "Corn N2O Emission cell C37 comparators": {
-                        "Crop Nitrogen Management": get_score(feature_score['crop_scores'], "nitrogenManagementCorn"),
-                        "Fertilizer Rate Type": get_score(feature_score['crop_scores'], "fertilizerRateTypeCorn"),
-                        "C37Scenario": get_score(feature_score['crop_scores'], "C37Scenario"),
-                        "N2O emission CI": get_score(feature_score['crop_scores'], "crop_N2OEmission_CI"),
-                        "N2O emission CI BAU": get_score(feature_score['crop_scores'], "crop_N2OEmission_CI_BAU"),
-                        "N2O emission CI enhanced efficiency": get_score(feature_score['crop_scores'], "crop_N2OEmission_CI_EE")
-                    }
-                }
-                if generate_certs:
-                    certificate = {
-                        "Certificate ID": f"CIS-{planting_ID}",
-                        "Certificate Type": certificate_type,
-                        "Date Created": datetime.now().strftime("%Y-%m-%d")
-                    }
-                    data_entry["Certificate"] = certificate
-                json_structure["Data"].append(data_entry)
-            
-            # Example: Generate filename with timestamp
-            # filename = f"feature_scores_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            
-            # Example: Generate filename with input collection ID
-            # filename = f"feature_scores_{input_collection_id}.json"
-            
-            # Save to file with nice formatting
-            # with open(filename, 'w') as f:
-            #     json.dump(json_structure, f, indent=2)
-            
-            # return filename
-            return json_structure
-
-        # **** USE FOR TESTING ONLY - DON'T RUN IN PRODUCTION ---------------------
-        # output_file = generate_feature_scores_json(feature_scores, input_collection_id)
-        # logger.info(f"File should be saved as: {output_file}")
+        # --- externalized to create_feature_scores_collection.py ---------------
+        # - uses feature_scores array to build the API Response object
         
-        # =========== END Section 6 Build the agC Results Collection ======================
+        # Section 6 - return the API Response Object 
+        return create_feature_scores_collection(
+            feature_scores=feature_scores,
+            input_collection_id=input_collection_id,
+            generate_certificates=generate_certs,
+            certificate_type=certificate_type
+        )
         
-        
-        
-        # ---------- RETURN FEATURE SCORES ARRAY -----------------------------
         # (this is still in the 'Try..Except' block)
-        return generate_feature_scores_json(feature_scores, input_collection_id)
-    
-        # # --- example of returning a sample result --------
-        # result_value = data["value1"] + data["value2"] + Herbicide_CI
-        # return {"result": result_value}
     
     except KeyError as e:
         raise ValueError(f"Missing key: {str(e)} in input data or global variables") from e
 
 
-# --------------- end of the function definition ------------------
+# --------------- end of the calculator_function() ----------------------------------------

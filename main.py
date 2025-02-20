@@ -57,7 +57,7 @@ soc = SOCLookup("corn_soc.csv", "soybean_soc.csv")
 logger.info("SOC Lookup tables loaded successfully.")
 
 # Configuration
-REF_VARS_PATH = "GREET_ref_vars.csv"
+REF_VARS_PATH = "GREET_ref_vars.csv" # path to reference variables CSV file
 EXCEL_FILE_PATH = "Feedstock CI Calculator 2023 - Standalone Version.xlsm"
 global_variables = {}
 
@@ -83,6 +83,8 @@ def initialize_global_variables(refData_reader):
     # global_variables.update(variables)
 
 # FUNCTION -- lifespan (context manager for FastAPI)
+# - This is where the various reference variables are fetched directly from the excel file
+# - 'refData_reader' class manages interactions with the excel file
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
@@ -97,7 +99,7 @@ async def lifespan(app: FastAPI):
         if not os.path.exists(EXCEL_FILE_PATH):
             raise FileNotFoundError(f"Excel file not found: {EXCEL_FILE_PATH}")
 
-        logger.info("line 53, Initializing RefDataLoader...")
+        logger.info("line 100, Initializing RefDataLoader...")
         refData_reader = RefDataLoader(REF_VARS_PATH)
         refData_reader.load_from_excel(EXCEL_FILE_PATH)
         
@@ -108,7 +110,7 @@ async def lifespan(app: FastAPI):
             
         # Initialize global variables from the RefDataLoader instance
         initialize_global_variables(refData_reader)
-        logger.info("line 66 Startup completed successfully.")
+        logger.info("line 111, Startup completed successfully.")
         yield  # Hand over control to the app
     except Exception as e:
         logger.error(f"Error during startup: {str(e)}")

@@ -1,4 +1,6 @@
 # class_RefDataLoader.py
+# - this class uses a csv map to ref vars in the excel file
+# - the path to the csv and the excel file is passed in the constructor
 import pandas as pd
 from typing import Dict, Any, Optional
 from pathlib import Path
@@ -9,7 +11,9 @@ class RefDataLoader:
         self._variables: Dict[str, float] = {}
         self._mapping = self._load_variable_mapping(mapping_csv_path)
 
-    # <internal function> create a dictionary to store the reference mapping data
+    # <internal function> 
+    # - create a dictionary to store the reference mapping data
+    # - read the mapping data from the CSV file
     @staticmethod
     def _load_variable_mapping(csv_path: str) -> Dict[str, Dict[str, str]]:
         """
@@ -17,7 +21,7 @@ class RefDataLoader:
         """
         try:
             mapping = {} # Initialize an empty dictionary
-            # Open file with UTF-8-SIG encoding to handle the BOM
+            # Open the csv file with UTF-8-SIG encoding to handle the BOM
             with open(csv_path, 'r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 required_columns = {'name', 'sheet', 'cell', 'type', 'description'}
@@ -40,7 +44,8 @@ class RefDataLoader:
         except Exception as e:
             raise ValueError(f"Error loading mapping CSV: {str(e)}")
 
-    # <internal function> convert Excel column letter to zero-based column index
+    # <internal function> 
+    # - convert Excel column letter to zero-based column index
     @staticmethod
     def _excel_column_to_index(column_letter: str) -> int:
         """Convert Excel column letter to zero-based column index."""
@@ -49,7 +54,8 @@ class RefDataLoader:
             result = result * 26 + (ord(char.upper()) - ord('A') + 1)
         return result - 1
 
-    # <public function> load variables from an Excel file
+    # <public function> 
+    # - load variables from an Excel file
     def load_from_excel(self, filepath: str) -> None:
         """Load all variables from Excel file with validation."""
         try:
