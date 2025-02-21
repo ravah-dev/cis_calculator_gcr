@@ -181,4 +181,30 @@ See 'gcr_deploy.md' for instructions...
 4. **Tag and Push the Image**:
 5. **Deploy to Cloud Run**:
 6. **Test Your API**  
+
+## Deploy with gcloud Buildpacks
+Requires gcloud authentication: `gcloud auth login`  
+
+```bash
+gcloud run deploy cis-calculator-test \
+    --source . \
+    --platform managed \
+    --region us-central1 \
+```
+
+## Testing the API
+**API Key:** AIzaSyCX5S0GwnB-u5APOBbLf0KfTd1TmsZBh_Q  
+**Server URL:** https://cis-calculator-test-690649350627.us-central1.run.app  
   
+### Test / (root) endpoint
+```bash
+curl "https://cis-calculator-test-690649350627.us-central1.run.app/?key=AIzaSyCX5S0GwnB-u5APOBbLf0KfTd1TmsZBh_Q"
+```
+
+### Test /calculate endpoint:
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d @test_farm_input.json \
+  "https://cis-calculator-test-690649350627.us-central1.run.app/calculate?key=AIzaSyCX5S0GwnB-u5APOBbLf0KfTd1TmsZBh_Q"
+```

@@ -173,7 +173,7 @@ async def read_root(request: Request):
 # # <example> Protect /calculate call using fastapi.security.api_key (deprecated)
 # @app.post("/calculate", dependencies=[Depends(verify_api_key)]) # when using fastapi.security.api_key
 
-@app.post("/calculate") # -- for testing using the google cloud generated api key credential
+@app.post("/calculate") # -- using the google cloud generated api key credential
 async def calculate(data: Dict[str, Any], request: Request):
     
     # check api credential key (google cloud generated api key)
